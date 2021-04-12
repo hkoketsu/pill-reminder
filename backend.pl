@@ -1,4 +1,3 @@
-% :- module(pop_a_pill)
 :-dynamic getWeekday/7.
 %setting up the database
 %====================================================================
