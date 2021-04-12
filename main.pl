@@ -1,4 +1,4 @@
-:- include('backend.pl').
+:- include('action.pl').
 
 /**
  * Pill reminder app.
@@ -36,11 +36,10 @@ quit :- write("Finishig the application...").
 help :-
     write("quit - finish the application\n"). % TODO
 
-query(['1']) :- registerNewPill.
-query(['2']) :- 
-    write("Name of pill to remove: "),
-    flush_output(current_output),
-    readln([Name|X]),
-    removePillByName(Name).
-query(['3']) :- refill. 
-% TODO
+query(['1']) :- action_register_new_pill.
+query(['2']) :- action_remove_pill.
+query(['3']) :- action_add_stock.
+query(['4']) :- action_pills_for_today.
+query(['5']) :- action_list_stocks.
+query(['6']) :- action_take_pill.
+query(['7']) :- action_suggest_pharmacy.
