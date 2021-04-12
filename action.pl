@@ -9,6 +9,7 @@ action_register_new_pill:-
     write("Enter the days you want to take the pill: "),
     flush_output(current_output),
     readln(Days),
+    days_to_dayNums(Days, DayNums),
 
     write("Enter the number of doses needed at once: "),
     flush_output(current_output),
@@ -34,7 +35,7 @@ action_register_new_pill:-
     flush_output(current_output),
     readln([EYear|X]),
 
-    add_pill_to_db(Name,Days,Doses,Timings,Stock,Purpose,EMonth,EYear),
+    add_pill_to_db(Name,DayNums,Doses,Timings,Stock,Purpose,EMonth,EYear),
 
     writeln("Registration completed.\n").
 

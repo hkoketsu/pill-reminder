@@ -103,6 +103,15 @@ day(5,"Friday").
 day(6,"Saturday").
 day(7,"Sunday").
 
+day(1,'Monday').
+day(2,'Tuesday').
+day(3,'Wednesday').
+day(4,'Thursday').
+day(5,'Friday').
+day(6,'Saturday').
+day(7,'Sunday').
+day([1,2,3,4,5,6,7],'Everyday').
+
 
 % Database
 %Adding a pill to the database
@@ -211,3 +220,8 @@ remove_list_b_from_list_a(A,[H|B], AMinusB) :- delete(A, H, AMinusH), remove_lis
 
 append([],L,L).
 append([H|T],L,[H|R]) :- append(T,L,R).
+
+days_to_dayNums([],[]).
+days_to_dayNums([Day|R1], [DayNum|R2]) :-
+    day(DayNum, Day),
+    days_to_dayNums(R1, R2).
