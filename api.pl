@@ -23,33 +23,70 @@
 % refered to https://github.com/cormacjmollitor/CPSC-312-Movie-Recommendations/blob/master/recommendation.pl
 
 
+find_place_url("https://maps.googleapis.com/maps/api/place/findplacefromtext/json").
+
+find_place_params([("inputtype", "textquery"),("fields", "name,geometry")]).
+
 nearby_search_url("https://maps.googleapis.com/maps/api/place/nearbysearch/json").
 
-params([("location", "49.26870829991198,-123.1706689178154"), ("type", "pharmacy"), ("radius", "2000")]).
+nearby_search_params([("location", "49.26870829991198,-123.1706689178154"), ("type", "pharmacy"), ("radius", "2000")]).
 
 
-call_nearby_search(Response) :- 
-    nearby_search_url(BaseUrl),
-    params(Params), 
+
+
+nearby_pharmacy(Input, Pharmacy) :-
+    get_location_value(Input, LocationValue),
+    call_nearby_search(LocationValue, Response),
+    take_first(Response.results, Pharmacy).
+
+
+get_location_value(TextInput, LocationValue) :-
+    call_location_search(TextInput, Response),
+    get_lat_lng_from_response(Response,Lat,Lng),
+    string_concat(Lat, ",", S),
+    string_concat(S, Lng, LocationValue).
+
+
+get_lat_lng_from_response(Response, Lat, Lng) :-
+    take_first(Response.candidates, A),
+    Lat is (A.geometry.location.lat),
+    Lng is (A.geometry.location.lng).
+
+
+    
+
+call_location_search(Input, Response) :- 
+    find_place_url(BaseUrl),
+    find_place_params(Params),
     generate_url(BaseUrl, Params, Url),
-    request(Url, Response).
+    add_query_param_to_url(Url, ("input", Input), NewUrl),
+    request(NewUrl, Response).
+
+
+call_nearby_search(LocationValue, Response) :- 
+    nearby_search_url(BaseUrl),
+    nearby_search_params(Params), 
+    generate_url(BaseUrl, Params, Url),
+    add_query_param_to_url(Url, ("location", LocationValue), NewUrl),
+    request(NewUrl, Response).
 
 generate_url(BaseUrl, Params, Url) :-
     add_api_key(BaseUrl, UrlWithApiKey),
-    add_query_params(UrlWithApiKey, Params, Url).
+    add_query_params_to_url(UrlWithApiKey, Params, Url).
 
 add_api_key(Url, UrlWithApiKey) :- 
-    client_key(key), 
-    string_concat("?key=", key, ApiKeyParam),
+    client_key(Key), 
+    string_concat("?key=", Key, ApiKeyParam),
     string_concat(Url, ApiKeyParam, UrlWithApiKey).
 
-add_query_params(Url, [], Url).
-add_query_params(Url, [(Key, Val)|T], UrlWithParams) :-
-    add_query_param(Url, (Key, Val), UrlWithParam),
-    add_query_params(UrlWithParam, T, UrlWithParams).
+
+add_query_params_to_url(Url, [], Url).
+add_query_params_to_url(Url, [(Key, Val)|T], UrlWithParams) :-
+    add_query_param_to_url(Url, (Key, Val), UrlWithParam),
+    add_query_params_to_url(UrlWithParam, T, UrlWithParams).
 
 
-add_query_param(Url, (Key, Val), NewUrl) :- 
+add_query_param_to_url(Url, (Key, Val), NewUrl) :- 
     make_query_param(Key, Val, Param), 
     string_concat("&", Param, AndParam), 
     string_concat(Url, AndParam, NewUrl).
@@ -61,3 +98,6 @@ make_query_param(Key, Val, Param) :-
 request(Url, Response) :-
     http_get(Url, Data, []),
     atom_json_dict(Data, Response, []).
+
+take_first([], []).
+take_first([H|_], H).
