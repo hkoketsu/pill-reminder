@@ -34,50 +34,73 @@ action_register_new_pill:-
     flush_output(current_output),
     readln([EYear|X]),
 
-    not(isExpired(EMonth,EYear)),
+    add_pill_to_db(Name,Days,Doses,Timings,Stock,Purpose,EMonth,EYear),
 
-    add_pill_to_db(Name,Days,Doses,Timings,Stock,Purpose,EMonth,EYear).
+    writeln("Registration completed.\n").
 
 
 action_remove_pill :-
     write("Enter name of the pill to remove: "),
     flush_output(current_output),
-    readln([Name|X]),
-    remove_pill_by_name(Name).
+    readln([Name|_]),
+    remove_pill_by_name(Name),
+    writeln("Removal completed.\n").
+
 
 action_add_stock :-
     write("Enter the name of the pill you want to update the stock of "),
     flush_output(current_output),
-    readln([NameP|X]),
-    pill(NameP,_,Stock,_,_,_),
+    readln([Name|_]),
+    pill(Name,_,Stock,_,_,_),
     write("How many pills would you like to add to the stock? "),
     flush_output(current_output),
-    readln([NoP|X]),
+    readln([NoP|_]),
     NS is (Stock+NoP),
     update_stock(Name,NS),
-    write("Pill successfully added").
+    writeln("Stock successfully added.\n").
+
 
 action_pills_for_today :-
-    write("Pills for today"),
+    writeln("--- Pills for today ---"),
     list_pills_for_today(NameList),
+    print_pills_from_name_list(NameList),
+    
+    list_pills_taken_today(TakenList),
+    not(member(_,TakenList)).
+
+action_pills_for_today :-
+    writeln("--- Pills for today ---"),
+    list_pills_for_today(NameList),
+    print_pills_from_name_list(NameList),
+
+    list_pills_taken_today(TakenList),
+    writeln("You have already taken"),
+    print_pills_taken(TakenList). 
+
+
+action_list_pills :-
+    list_all_pill_names(NameList),
     print_pills_from_name_list(NameList).
+
 
 action_list_stocks :-
     list_all_pill_names(NameList),
     print_pill_stock_from_name_list(NameList).
 
+
 action_take_pill :- 
     write("Enter name of the pill: "),
     flush_output(current_output),
-    readln([Name|X]),
+    readln([Name|_]),
 
     write("Enter what time you took the pill: "),
     flush_output(current_output),
-    readln([Time|X]),
+    readln([Time|_]),
 
     pill_timing(Name,Time),
+    pill(Name,_,Stock,_,_,_),
 
-    write("Remaining stock is "),
+    write("Remaining stock of "), write(Name), write(" is "),
     RS is (Stock-1),
     writeln(RS),
     update_stock(Name,RS),
@@ -87,9 +110,13 @@ action_take_pill :-
 action_suggest_pharmacy :-
     write("Where are you at?: "),
     flush_output(current_output),
-    readln([Location|X]),
+    readln([Location|_]),
     nearby_pharmacy(Location,Pharmacy),
     write("Nearby pharmacy from here is "),
     write(Pharmacy.name),
     write(" on "),
     writeln(Pharmacy.vicinity).
+
+action_remove_expired_pills :-
+    list_all_pill_names(NameList),
+    remove_expired_pills(NameList).

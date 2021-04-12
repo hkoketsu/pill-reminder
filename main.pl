@@ -18,28 +18,39 @@
 start :- 
     write("---- Pill Reminder ---- \n\n"),
     write("Type in 'help.' if you want to know what I can do.\n\n"),
+    action_remove_expired_pills,
     q.
 
 q :-
     write("Ask a query: "),
     flush_output(current_output),
-    readln(Ln),
-    query(Ln).
+    readln([Input|_]),
+    query(Input).
 
-
-query(['quit']) :- quit.
-query(['help']) :- help, q.
-query(Query) :- answer(Query), q.
 
 quit :- write("Finishig the application...").
 
 help :-
-    write("quit - finish the application\n"). % TODO
+    writeln("1 - register new pill"), 
+    writeln("2 - remove pill from list"), 
+    writeln("3 - add stocks of pill"), 
+    writeln("4 - list today's pills to take"), 
+    writeln("5 - list stocks"), 
+    writeln("6 - list all pills"), 
+    writeln("7 - check a pill as 'taken today'"), 
+    writeln("8 - suggest nearby pharmacy if stock is running out"),     
+    writeln("quit - finish the application\n").
 
-query(['1']) :- action_register_new_pill.
-query(['2']) :- action_remove_pill.
-query(['3']) :- action_add_stock.
-query(['4']) :- action_pills_for_today.
-query(['5']) :- action_list_stocks.
-query(['6']) :- action_take_pill.
-query(['7']) :- action_suggest_pharmacy.
+query('quit') :- quit.
+query('help') :- help, q.
+
+query(1) :- action_register_new_pill, q.
+query(2) :- action_remove_pill, q.
+query(3) :- action_add_stock, q.
+query(4) :- action_pills_for_today, q.
+query(5) :- action_list_stocks, q.
+query(6) :- action_list_pills, q.
+query(7) :- action_take_pill, q.
+query(8) :- action_suggest_pharmacy, q.
+
+query(_) :- writeln("We could not get that, sorry. Please try again."), q.
