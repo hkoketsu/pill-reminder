@@ -1,5 +1,3 @@
-:- module(api).
-
 :- use_module(library(http/http_client)).
 :- use_module(library(http/json)).
 :- use_module(library(uri)).
@@ -29,7 +27,7 @@ find_place_params([("inputtype", "textquery"),("fields", "name,geometry")]).
 
 nearby_search_url("https://maps.googleapis.com/maps/api/place/nearbysearch/json").
 
-nearby_search_params([("location", "49.26870829991198,-123.1706689178154"), ("type", "pharmacy"), ("radius", "2000")]).
+nearby_search_params([("type", "pharmacy"), ("radius", "2000")]).
 
 
 
