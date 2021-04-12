@@ -15,60 +15,6 @@
 
 :- initialization(db_attach('pillsWorld.pl',[])).
 
-register_new_pill:-
-    write("Enter name of the pill: "),
-    flush_output(current_output),
-    readln([Name|X]),
-
-    write("Enter the days you want to take the pill: "),
-    flush_output(current_output),
-    readln(Days),
-
-    write("Enter the number of doses needed at once: "),
-    flush_output(current_output),
-    readln([Doses|X]),
-
-    write("Enter when you need to take the pill (enter whole numbers 0-23): "),
-    flush_output(current_output),
-    readln(Timings),
-
-    write("Enter the number of pills you have: "),
-    flush_output(current_output),
-    readln([Stock|X]),
-
-    write("Enter the purpose of taking the pill: "),
-    flush_output(current_output),
-    readln([Purpose|X]),
-
-    write("Enter the expiration month: "),
-    flush_output(current_output),
-    readln([EMonth|X]),
-
-    write("Enter the expiration year: "),
-    flush_output(current_output),
-    readln([EYear|X]),
-
-    not(isExpired(EMonth,EYear)),
-
-    add_pill_to_db(Name,Days,Doses,Timings,Stock,Purpose,EMonth,EYear).
-
-%
-take_pill_today :- 
-    write("Enter name of the pill: "),
-    flush_output(current_output),
-    readln([Name|X]),
-
-    write("Enter what time you took the pill: "),
-    flush_output(current_output),
-    readln([Time|X]),
-
-    pill_timing(Name,Time).
-
-    write("Remaining stock is "),
-    RS is (Stock-1),
-    writeln(RS),
-    update_stock(Name,RS),
-    record_pill_taken(Name,Time).
 
 
 record_pill_taken(Name,Hour) :-
@@ -104,24 +50,26 @@ getPillForWeekday :-
     Stock>0,
     print_pill(Name,Days,Doses,Timing,Stock,Purpose).
 
-get_pills_for_today :-
-    daynum_today(DayNum),
-    list_pill_names_for_day(DayNum,NameList),
-    print_pill(Name,Days,Doses,Timing,Stock,Purpose).    
 
+list_pills_for_today(NameList) :-
+    daynum_today(DayNum),
+    list_pill_names_for_day(DayNum,NameList).
+
+list_pills_not_taken_today(NameList) :-
+    get_pills_for_today(TodayPills),
+    list_names_of_pills_token_today(TakenPills),
+    remove_list_b_from_list_a(TodayPills, TakenPills, NameList).
 
 
 %RREMOVING PILLS
 %Removing pill manually
-removePillByName(Name) :-
-    with_mutex(pill_db,retractall_pill(Name,_,_,_,_,_,_,_)).
+remove_pill_by_name(Name) :- remove_pill_from_db(Name).
 
 %Removing expired pills
 removeExpiredPills:-
-    pill(NameP,Days,Doses,Timing,Stock,Purpose,EMonth,EYear),
+    pill(NameP,_,_,_,EMonth,EYear),
     isExpired(EMonth,EYear),
-    removePill(NameP,Days,Doses,Timing,EMonth,EYear,Stock,Purpose).
-
+    remove_pill_from_db(NameP).
 
 get_pill :-
     write("Enter the name of the pill that you want the stock "),
@@ -164,7 +112,7 @@ checkStockForAll :-
 
 
 %Manually adding to stock after pharmacy run. Use in main after pharmacy stuff
-refill :-
+add_stock :-
     write("Enter the name of the pill you want to update the stock of "),
     flush_output(current_output),
     readln([NameP|X]),
@@ -233,6 +181,10 @@ list_pill_names_for_day(Day,L) :- findall(Name,pill_day(Name,Day),L).
 list_days_for_pill(Name,L) :- findall(Day,pill_day(Name,Day),L).
 list_timings_for_pill(Name,L) :- findall(Timing,pill_timing(Name,Timing),L).
 
+list_names_of_pills_token_today(L) :- 
+    date_today(Y,M,D),
+    findall(Name,pill_taken(Name,Y,M,D,_,_)).
+
 %Adding a pill to the database
 add_pill_to_db(Name,Days,Doses,Timings,Stock,Purpose,EMonth,EYear) :-
     add_pill(Name,Doses,Stock,Purpose,EMonth,EYear),
@@ -268,7 +220,7 @@ remove_pill_timings(Name) :- with_mutex(pill_db,retractall_pill_timing(Name,_)).
 
 %Update stock of pill
 update_stock(Name, NewStock) :- 
-    pill(Name,Doses,Stock,Purpose,EMonth,EYear)
+    pill(Name,Doses,Stock,Purpose,EMonth,EYear),
     remove_pill(Name),
     add_pill(Name,Doses,NewStock,Purpose,EMonth,EYear).
 
@@ -311,3 +263,6 @@ write_list([H|R], Separator) :- write(H), write(Separator), write_list(R, Separa
 remove_dups([], []).
 remove_dups([H|R],NewR) :- member(H,R), remove_dups(R,NewR).
 remove_dups([H|R],[H|NewR]) :- not(member(H,R)), remove_dups(R,NewR).
+
+remove_list_b_from_list_a(A,[],A).
+remove_list_b_from_list_a(A,[H|B], AMinusB) :- delete(A, H, AMinusH), remove_list_b_from_list_a(AMinusH, B, AMinusB).
