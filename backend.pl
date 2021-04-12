@@ -5,74 +5,87 @@
 %:-[api].
 :- use_module(library(persistency)).
 
-:- persistent pill(name:atom,daysToTake:atom,noOfDoses:integer,timing:integer,
-                   stock:integer,purpose:atom,eMonth:integer,eYear:integer).
+:- persistent pill(name:atom,noOfDoses:integer,stock:integer,purpose:atom,eMonth:integer,eYear:integer).
+
+:- persistent pill_day(name:atom,day:integer).
+
+:- persistent pill_timing(name:atom,timing:integer).
+
+:- persistent pill_taken(name:atom,year:integer,month:integer,day:integer,dayOfWeek:integer,hour:integer).
 
 :- initialization(db_attach('pillsWorld.pl',[])).
 
 register_new_pill:-
     write("Enter name of the pill: "),
     flush_output(current_output),
-    readln([Ln0|X]),
+    readln([Name|X]),
 
     write("Enter the days you want to take the pill: "),
     flush_output(current_output),
-    readln(Ln1),
+    readln(Days),
 
     write("Enter the number of doses needed at once: "),
     flush_output(current_output),
-    readln([Ln2|X]),
+    readln([Doses|X]),
 
     write("Enter when you need to take the pill (enter whole numbers 0-23): "),
     flush_output(current_output),
-    readln(Ln3),
+    readln(Timings),
 
     write("Enter the number of pills you have: "),
     flush_output(current_output),
-    readln([Ln4|X]),
+    readln([Stock|X]),
 
     write("Enter the purpose of taking the pill: "),
     flush_output(current_output),
-    readln([Ln5|X]),
+    readln([Purpose|X]),
 
     write("Enter the expiration month: "),
     flush_output(current_output),
-    readln([Ln6|X]),
+    readln([EMonth|X]),
 
     write("Enter the expiration year: "),
     flush_output(current_output),
-    readln([Ln7|X]),
+    readln([EYear|X]),
 
-    not(isExpired(Ln6,Ln7)),
+    not(isExpired(EMonth,EYear)),
 
-    %print_pill(Ln0,Ln1,Ln2,Ln3,Ln4,Ln5),
+    add_pill_to_db(Name,Days,Doses,Timings,Stock,Purpose,EMonth,EYear).
 
-    add_pill(Ln0,Ln1,Ln2,Ln3,Ln4,Ln5,Ln6,Ln7).
+%
+take_pill_today :- 
+    write("Enter name of the pill: "),
+    flush_output(current_output),
+    readln([Name|X]),
+
+    write("Enter what time you took the pill: "),
+    flush_output(current_output),
+    readln([Time|X]),
+
+    pill_timing(Name,Time).
+
+    write("Remaining stock is "),
+    RS is (Stock-1),
+    writeln(RS),
+    update_stock(Name,RS),
+    record_pill_taken(Name,Time).
 
 
-
-% takePill:- (buffer of around 10 minutes on either side to take the pill)
-
-
-
-print_pill(Name,Days,Doses,Timing,Stock,Purpose) :-
-    write(Name), write(" ("), write(Purpose), writeln(")"),
-    write("Take "), write(Doses), write(" doses at once "), write_list(Timing, "/"),  write(" on "), write_list(Days, ", "), write("\n\n").
-
-
-write_list([], _).
-write_list([H], Separator) :- write(H).
-write_list([H|R], Separator) :- write(H), write(Separator), write_list(R, Separator).
-
+record_pill_taken(Name,Hour) :-
+    date_today(Y,M,D),
+    daynum_today(DayOfWeek),
+    add_pill_taken_to_db(Name,Y,M,D,DayOfWeek,Hour).
 
 
 %Getting Details of a Pill
-getPill :-
+get_pill :-
     write("Enter Pill Name For Details "),
     flush_output(current_output),
     readln([NameP|X]),
-    pill(NameP,Days,Doses,Timing,Stock,Purpose,EMonth,EYear),
+    pill(NameP,_,Doses,_,Stock,Purpose,EMonth,EYear),
     Stock>0,
+    list_days_for_pill(NameP,Days),
+    list_timings_for_pill(NameP,Timings),
     print_pill(NameP,Days,Doses,Timing,Stock,Purpose).
 
 getPillForPurpose :-
@@ -91,10 +104,9 @@ getPillForWeekday :-
     Stock>0,
     print_pill(Name,Days,Doses,Timing,Stock,Purpose).
 
-getPillForToday :-
-    gettingWeekDay(WD,NameDay),
-    pill(NameDay,Days,Doses,Timing,Stock,Purpose,EMonth,EYear),
-    Stock>0,
+get_pills_for_today :-
+    daynum_today(DayNum),
+    list_pill_names_for_day(DayNum,NameList),
     print_pill(Name,Days,Doses,Timing,Stock,Purpose).    
 
 
@@ -111,6 +123,31 @@ removeExpiredPills:-
     removePill(NameP,Days,Doses,Timing,EMonth,EYear,Stock,Purpose).
 
 
+get_pill :-
+    write("Enter the name of the pill that you want the stock "),
+    flush_output(current_output),
+    readln([NameP|X]),
+    pill(NameP,_,Doses,_,Stock,Purpose),
+    list_days_for_pill(Name,Days),
+    list_timings_for_pill(Name,Timings),
+    write(NameP),
+    %takePillFucntion
+    write("is available"),
+    write("It is so and so day today"), %use oneof here to check if the it is
+                                       %todays day number for recommend.
+    write("So and so doses are left. Take it around time so").
+                                       %adding the feature of comparing current
+                                       %timestamps with given time taken and
+                                       %updating stocks accordingly
+                                       %to be implemented in take function.
+
+
+%Removing Pill from DataBase
+remove_pill :- 
+    write("Enter the name of the pill to remove: "),
+    flush_output(current_output),
+    readln([Name|X]),
+    removePillByName(Name).
 
 %CheckStock
 checkStockForAPill :-
@@ -132,6 +169,8 @@ refill :-
     flush_output(current_output),
     readln([NameP|X]),
     pill(NameP,_,_,_,Z,_,_,_),
+    readln([Name|X]),
+    pill(Name,_,_,_,_,_,Z,_),
     write("How many pills would you like to add to the stock? "),
     flush_output(current_output),
     readln([NoP|X]),
@@ -139,6 +178,8 @@ refill :-
     removePill(NameP,Days,Doses,Timing,Stock,Purpose),
     addPill(NameP,Days,Doses,Timing,NS,Purpose),
     write("Pill successfully added").
+    update_stock(Name,NS).
+    %print message needs to be added here and made a helper function.
 
 %helper functions
 %=======================================================================
@@ -153,30 +194,25 @@ timeRightNow(Hour,Minute,Second):-
     date_time_value(second,D,S).
 
 %Current Day
-dateRightNow(Day,Month,Year):-
+date_today(Year,Month,Year):-
     get_time(TS),
     stamp_date_time(TS,D,local),
     date_time_value(day,D,Day),
     date_time_value(month,D,Month),
     date_time_value(year,D,Year).
 
+
 %Current Weekday
-gettingWeekDay(WD,NameDay):-
-    get_time(TS),
-    stamp_date_time(TS,D,local),
-    date_time_value(date,D,Date),
-    day_of_the_week(Date,WD),
-    getWeekday(WD,NameDay).
+daynum_today(DayNum) :- date_today(Y,M,D), day_of_the_week(date(Y,M,D),DayNum).
 
 %Weekday Clauses
-getWeekday(1,monday).
-getWeekday(2,tuesday).
-getWeekday(3,wednesday).
-getWeekday(4,thursday).
-getWeekday(5,friday).
-getWeekday(6,saturday).
-getWeekday(7,sunday).
-
+day(1,"Monday").
+day(2,"Tuesday").
+day(3,"Wednesday").
+day(4,"Thursday").
+day(5,"Friday").
+day(6,"Saturday").
+day(7,"Sunday").
 
 
 %CHECKING EXPIRATION DATES FOR PILLS
@@ -191,28 +227,50 @@ isExpired(Em,Y):-
     write("The pill is expired").
 
 
+list_all_pill_names(L) :- findall(Name,pill(Name,_,_,_,_,_),L).
+list_pill_names_for_day(Day,L) :- findall(Name,pill_day(Name,Day),L).
+
+list_days_for_pill(Name,L) :- findall(Day,pill_day(Name,Day),L).
+list_timings_for_pill(Name,L) :- findall(Timing,pill_timing(Name,Timing),L).
 
 %Adding a pill to the database
-add_pill(Name,Days,Doses,Timings,Stock,Purpose,EMonth,EYear) :-
-    add_pill_for_all_days(Name,Days,Doses,Timings,Stock,Purpose,EMonth,EYear).
+add_pill_to_db(Name,Days,Doses,Timings,Stock,Purpose,EMonth,EYear) :-
+    add_pill(Name,Doses,Stock,Purpose,EMonth,EYear),
+    add_pill_days(Name,Days),
+    add_pill_timings(Name,Timings).
 
-add_pill_for_all_days(_,[],_,_,_,_,_,_).
-add_pill_for_all_days(Name,[Day|R],Doses,Timing,Stock,Purpose,EMonth,EYear) :-
-    add_pill_for_all_timings(Name,Day,Doses,Timing,Stock,Purpose,EMonth,EYear),
-    add_pill_for_all_days(Name,R,Doses,Timing,Stock,Purpose,EMonth,EYear).
+add_pill(Name,Doses,Stock,Purpose,EMonth,EYear) :-
+    with_mutex(pill_db,assert_pill(Name,Doses,Stock,Purpose,EMonth,EYear)).
 
-add_pill_for_all_timings(_,_,_,[],_,_,_,_).
-add_pill_for_all_timings(Name,Day,Doses,[Timing|R],Stock,Purpose,EMonth,EYear) :-
-    with_mutex(pill_db,assert_pill(Name,Day,Doses,Timing,Stock,Purpose,EMonth,EYear)),
-    add_pill_for_all_timings(Name,Day,Doses,R,Stock,Purpose,EMonth,EYear).
+add_pill_days(_,[]).
+add_pill_days(Name,[Day|R]) :-
+    with_mutex(pill_db,assert_pill_day(Name,Day)),
+    add_pill_days(Name,R).
 
+add_pill_timings(_,[]).
+add_pill_timings(Name,[Timing|R]) :-
+    with_mutex(pill_db,assert_pill_timing(Name,Timing)),
+    add_pill_timings(Name,R).
 
+add_pill_taken_to_db(Name,Year,Month,Day,DayOfWeek,Hour) :-
+    with_mutex(pill_db,assert_pill_taken(Name,Year,Month,Day,DayOfWeek,Hour)).
 
 %Removing a pill from the database
-removePill(Name,Days,Doses,Timing,EMonth,EYear,Stock,Purpose):-
-        with_mutex(pill_db,retract_pill(Name,Days,Doses,Timing,EMonth,EYear,Stock,Purpose)).
+remove_pill_from_db(Name) :- 
+    remove_pill(Name),
+    remove_pill_days(Name),
+    remove_pill_timings(Name).
+
+remove_pill(Name) :- with_mutex(pill_db,retract_pill(Name,_,_,_,_,_)).
+remove_pill_days(Name) :- with_mutex(pill_db,retractall_pill_day(Name,_)).
+remove_pill_timings(Name) :- with_mutex(pill_db,retractall_pill_timing(Name,_)).
 
 
+%Update stock of pill
+update_stock(Name, NewStock) :- 
+    pill(Name,Doses,Stock,Purpose,EMonth,EYear)
+    remove_pill(Name),
+    add_pill(Name,Doses,NewStock,Purpose,EMonth,EYear).
 
 %printing best course of action based on current Stocks
 isStockAvailable(Name,NoOfDoses,Stock):-
@@ -223,3 +281,33 @@ isStockAvailable(Name,NoOfDoses,Stock):-
 
 isStockAvailable(Name,NoOfDoses,Stock):-
     write("The Stock is good enough").
+printStockNeeds(Name,NoOfDoses,Stock):-
+    write("you have enough for now").
+
+%isAvailable():- checking if a pill will be available for sometime
+%add printing in this.
+
+
+%creating a super main function in different file to finalise the flow of
+%control for a smooth user interface.
+
+print_pills_from_name_list([Name|R]) :-
+    pill(Name,Doses,Stock,Purpose,EMonth,EYear),
+    list_days_for_pill(Name,Days),
+    list_timings_for_pill(Name,Timings),
+    print_pill(Name,Days,Doses,Timing,Stock,Purpose,EMonth,EYear).
+
+
+print_pill(Name,Days,Doses,Timing,Stock,Purpose,EMonth,EYear) :- 
+    write(Name), write(" ("), write(Purpose), writeln(")"),
+    write("Take "), write(Doses), write(" doses at once "), write_list(Timing, "/"),  write(" on "), write_list(Days, ", "), write("\n"),
+    write("Expires at: "), write(EYear), write("/"), write(EMonth), write("\n\n").
+
+write_list([], _).
+write_list([H], Separator) :- write(H).
+write_list([H|R], Separator) :- write(H), write(Separator), write_list(R, Separator).
+
+
+remove_dups([], []).
+remove_dups([H|R],NewR) :- member(H,R), remove_dups(R,NewR).
+remove_dups([H|R],[H|NewR]) :- not(member(H,R)), remove_dups(R,NewR).
