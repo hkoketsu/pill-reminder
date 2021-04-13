@@ -38,7 +38,7 @@ help :-
     writeln("5 - list stocks"), 
     writeln("6 - list all pills"), 
     writeln("7 - check a pill as 'taken today'"), 
-    writeln("8 - suggest nearby pharmacy if stock is running out"),     
+    writeln("8 - suggest nearby pharmacy"),     
     writeln("quit - finish the application\n").
 
 query('quit') :- quit.

@@ -23,7 +23,6 @@ record_pill_taken(Name,Hour) :-
     add_pill_taken_to_db(Name,Y,M,D,DayOfWeek,Hour).
 
 
-%Update stock of pill
 update_stock(Name, NewStock) :- 
     pill(Name,Doses,_,Purpose,EMonth,EYear),
     remove_pill(Name),
@@ -153,26 +152,7 @@ remove_pill_days(Name) :- with_mutex(pill_db,retractall_pill_day(Name,_)).
 remove_pill_timings(Name) :- with_mutex(pill_db,retractall_pill_timing(Name,_)).
 remove_pill_taken(Name) :- with_mutex(pill_db,retractall_pill_taken(Name,_,_,_,_,_)).
 
-
-
-%printing best course of action based on current Stocks
-% isStockAvailable(Name,NoOfDoses,Stock):-
-%     N is (Stock/NoOfDoses),
-%     N < 7,
-%     write("Running Low.See the pharmacy details").
-%     %add api here maybe hiroki
-
-% isStockAvailable(Name,NoOfDoses,Stock):-
-%     write("The Stock is good enough").
-% printStockNeeds(Name,NoOfDoses,Stock):-
-%     write("you have enough for now").
-
-%isAvailable():- checking if a pill will be available for sometime
-%add printing in this.
-
-% Utils
-%creating a super main function in different file to finalise the flow of
-%control for a smooth user interface.
+%Print information
 print_pills_from_name_list([]).
 print_pills_from_name_list([Name|R]) :-
     pill(Name,Doses,Stock,Purpose,EMonth,EYear),
@@ -207,6 +187,7 @@ print_pills_taken([(Name,Time)|R]) :-
 print_pill_stock(Name,Stock,EMonth,EYear) :-
     write(Name), write(": "), write(Stock), write(" ,expiring in "), write(EYear), write("/"), writeln(EMonth).
 
+%Utils
 write_list([], _).
 write_list([H], _) :- write(H).
 write_list([H|R], Separator) :- write(H), write(Separator), write_list(R, Separator).
